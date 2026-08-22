@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---- Campus Lost & Found ----
+uploads/
+faiss_index/
+*.db
+!.env.example
