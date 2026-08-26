@@ -40,3 +40,4 @@ package = false
 # The project is not installed as a package, so put the repo root on sys.path.
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = ["slow: loads the OpenCLIP or NLI checkpoint (deselect with -m 'not slow')"]

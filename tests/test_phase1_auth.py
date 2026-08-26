@@ -1,19 +1,13 @@
 """Phase 1 checkpoint: register student / security / admin, confirm JWT + role.
 
-Runs against a throwaway SQLite file so it never touches campus_lost_found.db.
+Runs against a throwaway SQLite file (see tests/conftest.py) so it never
+touches campus_lost_found.db.
     uv run pytest tests/test_phase1_auth.py -v
 """
 
-import os
-import tempfile
 
 import pytest
 
-# Point the app at a temp DB before backend.database is imported anywhere.
-_TMP_DB = os.path.join(tempfile.mkdtemp(), "test.db")
-os.environ["DATABASE_URL"] = f"sqlite:///{_TMP_DB}"
-os.environ.setdefault("SECRET_KEY", "test-secret-key-for-phase-1")
-os.environ.setdefault("FERNET_KEY", "n_PKtQQN2tShgcWiCrKY-TphSwXctYvaB_0CCzUNh9M=")
 
 from fastapi import Depends  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -37,7 +31,7 @@ PASSWORD = "correct-horse-battery"
 
 
 @pytest.fixture(scope="module")
-def client():
+def client(fresh_state):
     with TestClient(app) as c:
         yield c
 
@@ -105,4 +99,4 @@ def test_role_required_blocks_wrong_role(client):
 
 
 def test_health(client):
-    assert client.get("/health").json() == {"status": "ok"}
+    assert client.get("/health").json()["status"] == "ok"

@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Ink on paper.
+
+   The whole interface is achromatic on purpose: the only colour in the product
+   is the photographs of the things people lost. Two functional hues exist
+   (alert, affirm) and are rationed to marks and text — never fills — so that
+   rule holds.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-ink: #0a0a0a;         /* primary: type, the rail, every mark */
+  --color-graphite: #292524;    /* hover-darkened ink */
+  --color-ash: #78716c;         /* secondary type */
+  --color-mist: #a8a29e;        /* tertiary type, placeholders */
+  --color-line: #e7e5e4;        /* the rare rule */
+  --color-ground: #f5f5f4;      /* the page field */
+  --color-paper: #ffffff;       /* raised surfaces */
+  --color-alert: #dc2626;       /* rejection, error — marks and text only */
+  --color-affirm: #15803d;      /* approval — marks and text only */
+
+  --font-sans: "Archivo", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display type is set tight; the body face is not. Separate them explicitly
+   rather than letting a global letter-spacing leak into paragraphs. */
+.u-display {
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+.u-meta {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+
+/* Keyboard focus stays visible everywhere; pointer clicks stay quiet. */
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* --- the match seam ------------------------------------------------------ */
+/* Draws itself once, left to right, when a result set arrives. */
+@keyframes seam-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes seam-mark {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.seam-track { transform-origin: left center; animation: seam-draw 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.seam-mark  { animation: seam-mark 320ms cubic-bezier(0.2, 0.8, 0.2, 1) 420ms both; }
+.rise       { animation: rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .seam-track, .seam-mark, .rise { animation: none; opacity: 1; transform: none; }
+}
+
+/* Thin, unobtrusive scrollbars that do not interrupt the white field. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}

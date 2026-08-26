@@ -151,6 +151,25 @@ class ClaimVerifyResult(BaseModel):
     status: ClaimStatus
 
 
+class ClaimReceipt(BaseModel):
+    """What the *claimant* is told.
+
+    Deliberately omits ``nli_score``. Handing the raw entailment probability back
+    to whoever submitted the text turns verification into a hill-climbing game:
+    tweak the wording, watch the number move, repeat until it clears 0.7.
+    Staff read the score through ``ClaimOut``; claimants get the verdict only.
+    """
+
+    id: int
+    lost_item_id: int
+    found_item_id: int
+    claimant_id: int
+    status: ClaimStatus
+    attempts_used: int
+    attempts_remaining: int
+    created_at: datetime
+
+
 class CustodyLogOut(BaseModel):
     model_config = ORM
 
@@ -176,3 +195,17 @@ class SystemStats(BaseModel):
 
 class Message(BaseModel):
     detail: str
+
+
+# --------------------------------------------------------------------------- #
+# Submission results — the POST endpoints return the new row *and* the matches
+# the system found for it, so the dashboard needs only one round trip.
+# --------------------------------------------------------------------------- #
+class FoundItemSubmitResult(BaseModel):
+    item: FoundItemOut
+    matches: list["LostItemMatch"]
+
+
+class LostItemSubmitResult(BaseModel):
+    item: LostItemOut
+    matches: list["FoundItemMatch"]
