@@ -1,74 +1,102 @@
 // Report something lost, hand something in, review matches, claim.
 import { useCallback, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { api, errorMessage } from "../api/client";
 import { useAuth } from "../auth.jsx";
 import ClaimModal from "../components/ClaimModal";
 import ItemCard, { Thumbnail } from "../components/ItemCard";
 import MatchCard, { relativeConfidence } from "../components/MatchCard";
 import { EmptyState, SkeletonList, Spinner } from "../components/Spinner";
+import SectionNav from "../components/SectionNav";
 import { useToast } from "../components/Toast";
+import { resolveSection } from "../sections";
 import { cx, labelForStatus, lot, stampFor, theme } from "../theme";
-
-const TABS = [
-  {
-    id: "lost",
-    label: "Report lost",
-    heading: "Lost something?",
-    lead: "Describe it in your own words. We compare that against photographs of everything handed in.",
-  },
-  {
-    id: "found",
-    label: "Hand in",
-    heading: "Found something?",
-    lead: "Photograph it and take it to the nearest security post. We will find whoever is looking for it.",
-  },
-  {
-    id: "reports",
-    label: "My reports",
-    heading: "Your reports",
-    lead: "Each one stays open and is re-checked against every item handed in.",
-  },
-  {
-    id: "claims",
-    label: "My claims",
-    heading: "Your claims",
-    lead: "Where each of your claims got to.",
-  },
-];
 
 export default function StudentDashboard() {
   const { user, refresh } = useAuth();
   const toast = useToast();
-  const [tab, setTab] = useState("lost");
-  const current = TABS.find((t) => t.id === tab);
+  const { section: sectionId } = useParams();
+  const section = resolveSection("student", sectionId);
 
   return (
     <div>
       <header>
         <span className={theme.meta}>{user?.full_name}</span>
-        <h1 className={cx(theme.heading.page, "mt-3")}>{current.heading}</h1>
-        <p className={cx(theme.text.lead, "mt-4 max-w-md")}>{current.lead}</p>
+        <h1 className={cx(theme.heading.page, "mt-3")}>{section.heading}</h1>
+        <p className={cx(theme.text.lead, "mt-4 max-w-md")}>{section.lead}</p>
       </header>
 
-      <nav className={cx(theme.tab.row, "mt-10")}>
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={tab === id ? theme.tab.itemActive : theme.tab.item}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      <div className="mt-8 md:mt-10">
+        <SectionNav workspace="student" />
+      </div>
 
       <div className="mt-8">
-        {tab === "lost" && <ReportLost toast={toast} />}
-        {tab === "found" && <HandIn toast={toast} onCredit={refresh} />}
-        {tab === "reports" && <MyReports toast={toast} />}
-        {tab === "claims" && <MyClaims toast={toast} />}
+        {section.id === "report-lost" && <ReportLost toast={toast} />}
+        {section.id === "hand-in" && <HandIn toast={toast} onCredit={refresh} />}
+        {section.id === "handed-in" && <HandedIn toast={toast} />}
+        {section.id === "reports" && <MyReports toast={toast} />}
+        {section.id === "claims" && <MyClaims toast={toast} />}
       </div>
     </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/** Everything this student handed in, and what became of it. */
+function HandedIn({ toast }) {
+  const [items, setItems] = useState(null);
+
+  useEffect(() => {
+    api
+      .listFound({ mine: true })
+      .then(setItems)
+      .catch((err) => {
+        toast.error(errorMessage(err, "Could not load what you handed in"));
+        setItems([]);
+      });
+  }, [toast]);
+
+  if (items === null) return <SkeletonList />;
+  if (items.length === 0) {
+    return (
+      <div className={theme.cardFlat}>
+        <EmptyState
+          title="You have not handed anything in"
+          hint="Use Hand in to log something you found. Returning an item earns you a credit."
+        />
+      </div>
+    );
+  }
+
+  const returned = items.filter((item) => item.status === "claimed").length;
+
+  return (
+    <div className="space-y-3">
+      <p className={cx(theme.figure, "pb-1")}>
+        {items.length} handed in / {returned} back with{" "}
+        {returned === 1 ? "its owner" : "their owners"}
+      </p>
+      {items.map((item) => (
+        <ItemCard
+          key={item.id}
+          item={item}
+          kind="found"
+          actions={<HandedInStatus status={item.status} />}
+        />
+      ))}
+    </div>
+  );
+}
+
+function HandedInStatus({ status }) {
+  return (
+    <p className={theme.text.muted}>
+      {{
+        pending_custody: "Waiting for the security post to confirm they have it.",
+        verified: "At the security post. We are matching it against lost reports.",
+        claimed: "Returned to its owner — thank you. You earned a credit for this.",
+      }[status]}
+    </p>
   );
 }
 
@@ -413,7 +441,9 @@ function MyClaims({ toast }) {
   return (
     <div className="space-y-3">
       {claims.map((claim) => {
-        const total = claim.attempts_used + claim.attempts_remaining;
+        // Only worth showing when they can still act on it. On an approved claim
+        // the count is noise; on an exhausted one it is the whole message.
+        const showAttempts = claim.status === "rejected";
         return (
           <div key={claim.id} className={theme.card}>
             <div className="flex items-center justify-between gap-3">
@@ -424,13 +454,17 @@ function MyClaims({ toast }) {
             <p className={cx(theme.text.body, "mt-3")}>
               {claim.status === "approved" && "Verified. Collect it from the security post."}
               {claim.status === "released" && "Returned to you."}
-              {claim.status === "rejected" && "The detail did not match your report."}
+              {claim.status === "rejected" && "The detail you gave did not match your report."}
               {claim.status === "pending" && "Waiting on verification."}
             </p>
 
-            <p className={cx(theme.figure, "mt-2.5")}>
-              {claim.attempts_used} of {total} attempts used
-            </p>
+            {showAttempts && (
+              <p className={cx(theme.figure, "mt-2.5")}>
+                {claim.attempts_remaining > 0
+                  ? `${claim.attempts_remaining} more ${claim.attempts_remaining === 1 ? "try" : "tries"} on this item`
+                  : "No tries left — visit the security post in person"}
+              </p>
+            )}
           </div>
         );
       })}

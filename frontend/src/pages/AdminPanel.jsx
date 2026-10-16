@@ -1,45 +1,36 @@
 // Accounts, listings, and how the system is doing.
 import { useCallback, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { api, errorMessage } from "../api/client";
 import { useAuth } from "../auth.jsx";
 import ItemCard from "../components/ItemCard";
 import { EmptyState, SkeletonList, Spinner } from "../components/Spinner";
+import SectionNav from "../components/SectionNav";
 import { useToast } from "../components/Toast";
+import { resolveSection } from "../sections";
 import { cx, theme } from "../theme";
-
-const TABS = [
-  { id: "stats", label: "Overview" },
-  { id: "users", label: "People" },
-  { id: "listings", label: "Listings" },
-];
 
 export default function AdminPanel() {
   const toast = useToast();
-  const [tab, setTab] = useState("stats");
+  const { section: sectionId } = useParams();
+  const section = resolveSection("admin", sectionId);
 
   return (
     <div>
       <header>
         <span className={theme.meta}>Administration</span>
-        <h1 className={cx(theme.heading.page, "mt-3")}>How it&rsquo;s going</h1>
+        <h1 className={cx(theme.heading.page, "mt-3")}>{section.heading}</h1>
+        {section.lead && <p className={cx(theme.text.lead, "mt-4 max-w-md")}>{section.lead}</p>}
       </header>
 
-      <nav className={cx(theme.tab.row, "mt-10")}>
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={tab === id ? theme.tab.itemActive : theme.tab.item}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      <div className="mt-8 md:mt-10">
+        <SectionNav workspace="admin" />
+      </div>
 
       <div className="mt-8">
-        {tab === "stats" && <Overview toast={toast} />}
-        {tab === "users" && <People toast={toast} />}
-        {tab === "listings" && <Listings toast={toast} />}
+        {section.id === "overview" && <Overview toast={toast} />}
+        {section.id === "people" && <People toast={toast} />}
+        {section.id === "listings" && <Listings toast={toast} />}
       </div>
     </div>
   );

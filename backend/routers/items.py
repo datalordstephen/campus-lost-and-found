@@ -284,14 +284,26 @@ def report_lost_item(
 @router.get("/found", response_model=list[FoundItemOut])
 def list_found_items(
     item_status: FoundItemStatus | None = Query(None, alias="status"),
+    mine: bool = Query(False, description="Only items the caller handed in"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(UserRole.security, UserRole.admin)),
+    current_user: User = Depends(
+        role_required(UserRole.student, UserRole.security, UserRole.admin)
+    ),
 ) -> list[FoundItem]:
+    """The property register.
+
+    Staff see everything. A student sees only what they handed in themselves —
+    they need to be able to check whether the thing they turned in was claimed,
+    but the full register would expose every item on campus to anyone with an
+    account, which is a gift to somebody shopping for something to claim.
+    """
     query = select(FoundItem).order_by(FoundItem.created_at.desc())
     if item_status is not None:
         query = query.where(FoundItem.status == item_status)
+    if mine or current_user.role == UserRole.student:
+        query = query.where(FoundItem.submitted_by == current_user.id)
     return list(db.scalars(query.limit(limit).offset(offset)).all())
 
 
@@ -324,6 +336,9 @@ def get_found_item(
 ) -> FoundItem:
     item = db.get(FoundItem, item_id)
     if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Found item not found")
+    if current_user.role == UserRole.student and item.submitted_by != current_user.id:
+        # 404 rather than 403 — do not confirm that an item with this id exists.
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Found item not found")
     return item
 

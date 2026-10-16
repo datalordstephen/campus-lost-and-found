@@ -51,22 +51,19 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
-            {/* Admins can view every dashboard; staff routes stay closed to students. */}
-            <Route path="/student" element={
-              <Protected roles={["student", "security", "admin"]}>
-                <StudentDashboard />
-              </Protected>
-            } />
-            <Route path="/security" element={
-              <Protected roles={["security", "admin"]}>
-                <SecurityDashboard />
-              </Protected>
-            } />
-            <Route path="/admin" element={
-              <Protected roles={["admin"]}>
-                <AdminPanel />
-              </Protected>
-            } />
+            {/* Every section is its own URL, so the sidebar navigates, the back
+                button works, and a section can be linked to directly. The bare
+                path renders the first section. Admins can view every workspace;
+                staff routes stay closed to students. */}
+            {[
+              ["/student", ["student", "security", "admin"], <StudentDashboard />],
+              ["/security", ["security", "admin"], <SecurityDashboard />],
+              ["/admin", ["admin"], <AdminPanel />],
+            ].flatMap(([path, roles, element]) =>
+              [path, `${path}/:section`].map((p) => (
+                <Route key={p} path={p} element={<Protected roles={roles}>{element}</Protected>} />
+              )),
+            )}
 
             <Route path="*" element={<LandingRedirect />} />
           </Routes>

@@ -1,55 +1,35 @@
 // The property desk: take custody of what comes in, and release what is proven.
 import { useCallback, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { api, errorMessage } from "../api/client";
 import ItemCard from "../components/ItemCard";
 import MatchCard, { relativeConfidence } from "../components/MatchCard";
 import { EmptyState, SkeletonList, Spinner } from "../components/Spinner";
+import SectionNav from "../components/SectionNav";
 import { useToast } from "../components/Toast";
+import { resolveSection } from "../sections";
 import { cx, labelForStatus, lot, stampFor, theme } from "../theme";
-
-const TABS = [
-  {
-    id: "custody",
-    label: "Incoming",
-    heading: "What came in",
-    lead: "Confirm each item is physically at your post, then find who is looking for it.",
-  },
-  {
-    id: "claims",
-    label: "Claims",
-    heading: "Who is claiming",
-    lead: "Every claim here has been checked against the owner's own record of the item.",
-  },
-];
 
 export default function SecurityDashboard() {
   const toast = useToast();
-  const [tab, setTab] = useState("custody");
-  const current = TABS.find((t) => t.id === tab);
+  const { section: sectionId } = useParams();
+  const section = resolveSection("security", sectionId);
 
   return (
     <div>
       <header>
         <span className={theme.meta}>Property desk</span>
-        <h1 className={cx(theme.heading.page, "mt-3")}>{current.heading}</h1>
-        <p className={cx(theme.text.lead, "mt-4 max-w-md")}>{current.lead}</p>
+        <h1 className={cx(theme.heading.page, "mt-3")}>{section.heading}</h1>
+        <p className={cx(theme.text.lead, "mt-4 max-w-md")}>{section.lead}</p>
       </header>
 
-      <nav className={cx(theme.tab.row, "mt-10")}>
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={tab === id ? theme.tab.itemActive : theme.tab.item}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      <div className="mt-8 md:mt-10">
+        <SectionNav workspace="security" />
+      </div>
 
       <div className="mt-8">
-        {tab === "custody" && <Custody toast={toast} />}
-        {tab === "claims" && <ClaimQueue toast={toast} />}
+        {section.id === "incoming" && <Custody toast={toast} />}
+        {section.id === "claims" && <ClaimQueue toast={toast} />}
       </div>
     </div>
   );

@@ -233,11 +233,55 @@ def test_rejects_non_image_and_oversized_uploads(client, actors):
     assert liar.status_code == 400
 
 
-def test_found_listing_is_staff_only(client, actors):
-    assert client.get("/items/found", headers=actors["student"]).status_code == 403
-    assert client.get("/items/found", headers=actors["security"]).status_code == 200
+def test_student_sees_only_what_they_handed_in(client, actors, slugs):
+    """A student must be able to check back on their own submissions, but the
+    full register would show every item on campus to anyone with an account."""
+    other = client.post(
+        "/auth/register",
+        json={"full_name": "Stranger", "email": "stranger@campus.edu",
+              "password": PASSWORD, "role": "student"},
+    ).json()
+    stranger = {"Authorization": f"Bearer {other['access_token']}"}
+    stranger_id = other["user"]["id"]
+
+    _submit_found(client, actors["student"], slugs[0])
+
+    # The student who handed things in sees them.
+    mine = client.get("/items/found", headers=actors["student"])
+    assert mine.status_code == 200
+    assert mine.json(), "student cannot see anything they handed in"
+    assert all(i["submitted_by"] == actors["student_id"] for i in mine.json())
+
+    # Someone who handed nothing in sees nothing — not everyone else's items.
+    theirs = client.get("/items/found", headers=stranger)
+    assert theirs.status_code == 200
+    assert theirs.json() == []
+
+    # `mine` is not a way to opt out of that scoping.
+    assert client.get("/items/found?mine=false", headers=stranger).json() == []
+
+    # Staff still see the whole register.
+    everything = client.get("/items/found", headers=actors["security"])
+    assert everything.status_code == 200
+    assert len(everything.json()) > len(mine.json()) or len(everything.json()) >= 1
     assert client.get("/items/found", headers=actors["admin"]).status_code == 200
     assert client.get("/items/found").status_code == 401
+    assert stranger_id != actors["student_id"]
+
+
+def test_student_cannot_read_another_students_found_item(client, actors, slugs):
+    item_id = _submit_found(client, actors["student"], slugs[0]).json()["item"]["id"]
+    other = client.post(
+        "/auth/register",
+        json={"full_name": "Nosy", "email": "nosy@campus.edu",
+              "password": PASSWORD, "role": "student"},
+    ).json()
+    nosy = {"Authorization": f"Bearer {other['access_token']}"}
+
+    # 404 rather than 403 — do not confirm the id exists.
+    assert client.get(f"/items/found/{item_id}", headers=nosy).status_code == 404
+    assert client.get(f"/items/found/{item_id}", headers=actors["student"]).status_code == 200
+    assert client.get(f"/items/found/{item_id}", headers=actors["security"]).status_code == 200
 
 
 def test_student_cannot_read_another_students_matches(client, actors, slugs):

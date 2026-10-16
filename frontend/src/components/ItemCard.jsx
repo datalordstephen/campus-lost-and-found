@@ -1,4 +1,5 @@
 // One object in the property office: its photograph, its lot number, its marking.
+import { useState } from "react";
 import { imageUrl } from "../api/client";
 import { cx, labelForStatus, lot, stampFor, theme } from "../theme";
 
@@ -36,12 +37,18 @@ export default function ItemCard({ item, kind, actions, className }) {
 /**
  * The photograph is the only colour on the page, so it gets a clean square and
  * nothing else — no frame, no overlay, no rounded-away corners.
+ *
+ * A record can outlive its file (an upload directory cleared, a restore that
+ * missed the photos). Falling back to the placeholder keeps the row readable;
+ * the browser's broken-image glyph makes the whole page look broken.
  */
 export function Thumbnail({ src, alt, className = "h-[4.5rem] w-[4.5rem]" }) {
-  if (!src) {
+  const [failed, setFailed] = useState(false);
+
+  if (!src || failed) {
     return (
       <div className={cx(className, "grid shrink-0 place-items-center rounded-md bg-ground")}>
-        <span className="u-meta text-mist">no photo</span>
+        <span className="u-meta text-mist">{failed ? "no file" : "no photo"}</span>
       </div>
     );
   }
@@ -50,6 +57,7 @@ export function Thumbnail({ src, alt, className = "h-[4.5rem] w-[4.5rem]" }) {
       src={src}
       alt={alt}
       loading="lazy"
+      onError={() => setFailed(true)}
       className={cx(className, "shrink-0 rounded-md bg-ground object-cover")}
     />
   );
