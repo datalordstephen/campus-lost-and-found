@@ -1,0 +1,121 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.11.9, pytest-9.1.1, pluggy-1.6.0 -- /Users/mac/Desktop/campus-lost-and-found/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/mac/Desktop/campus-lost-and-found
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.14.2
+collecting ... collected 55 items
+
+tests/test_phase1_auth.py::test_register_returns_jwt_with_correct_role[student-Ada Student-ada@campus.edu] PASSED [  1%]
+tests/test_phase1_auth.py::test_register_returns_jwt_with_correct_role[security-Ben Guard-ben@campus.edu] PASSED [  3%]
+tests/test_phase1_auth.py::test_register_returns_jwt_with_correct_role[admin-Cleo Admin-cleo@campus.edu] PASSED [  5%]
+tests/test_phase1_auth.py::test_duplicate_email_rejected PASSED          [  7%]
+tests/test_phase1_auth.py::test_login_and_me_roundtrip PASSED            [  9%]
+tests/test_phase1_auth.py::test_wrong_password_and_missing_token_rejected PASSED [ 10%]
+tests/test_phase1_auth.py::test_role_required_blocks_wrong_role PASSED   [ 12%]
+tests/test_phase1_auth.py::test_health PASSED                            [ 14%]
+tests/test_phase2_retrieval.py::test_embeddings_are_512d_unit_norm_float32 PASSED [ 16%]
+tests/test_phase2_retrieval.py::test_single_and_batch_encoders_agree PASSED [ 18%]
+tests/test_phase2_retrieval.py::test_encode_combined_is_unit_norm_and_between_its_parts PASSED [ 20%]
+tests/test_phase2_retrieval.py::test_text_description_retrieves_matching_photo 
+  query            score  rank  top-1 result
+  backpack        0.2219     1  backpack
+  bicycle         0.2658     1  bicycle
+  eyeglasses      0.2422     1  eyeglasses
+  headphones      0.2938     1  headphones
+  keys            0.3072     1  keys
+  laptop          0.3103     1  laptop
+  umbrella        0.2963     1  umbrella
+  wallet          0.2990     1  wallet
+  water_bottle    0.3246     1  water_bottle
+  wristwatch      0.2591     1  wristwatch
+
+  P@1 10/10   P@3 10/10   MRR 1.000
+PASSED [ 21%]
+tests/test_phase2_retrieval.py::test_matching_pairs_score_far_above_mismatched_pairs PASSED [ 23%]
+tests/test_phase2_retrieval.py::test_scores_are_cosine_similarity PASSED [ 25%]
+tests/test_phase2_retrieval.py::test_found_and_lost_indexes_are_independent PASSED [ 27%]
+tests/test_phase2_retrieval.py::test_empty_index_and_k_bounds PASSED     [ 29%]
+tests/test_phase2_retrieval.py::test_soft_delete_hides_item_without_renumbering_others PASSED [ 30%]
+tests/test_phase2_retrieval.py::test_over_fetch_still_returns_k_live_results PASSED [ 32%]
+tests/test_phase2_retrieval.py::test_exclude_item_ids PASSED             [ 34%]
+tests/test_phase2_retrieval.py::test_min_score_filter PASSED             [ 36%]
+tests/test_phase2_retrieval.py::test_rebuild_compacts_and_returns_position_remap PASSED [ 38%]
+tests/test_phase2_retrieval.py::test_save_and_load_round_trip PASSED     [ 40%]
+tests/test_phase2_retrieval.py::test_wrong_dimension_is_rejected PASSED  [ 41%]
+tests/test_phase3_items.py::test_lost_report_retrieves_the_matching_found_photo 
+  lost report                                        score rank  top match
+  the backpack I left in the lecture hall           0.1790    1  backpack
+  my bicycle taken from the rack outside            0.2347    2  backpack   <-- MISS
+  my glasses in a case                              0.2220    3  wallet   <-- MISS
+  a pair of headphones left on a library desk       0.2773    1  headphones
+  my keys on a keyring                              0.3234    1  keys
+  the laptop computer I left in the study room      0.2688    1  laptop
+  an umbrella left by the entrance                  0.2709    1  umbrella
+  my leather wallet                                 0.3049    1  wallet
+  my reusable water bottle                          0.2962    1  water_bottle
+  the wristwatch I took off at the gym              0.1764    1  wristwatch
+
+  P@1 8/10   P@3 10/10
+PASSED [ 43%]
+tests/test_phase3_items.py::test_matches_endpoint_agrees_with_submission_response PASSED [ 45%]
+tests/test_phase3_items.py::test_matches_for_found_item_returns_lost_reports PASSED [ 47%]
+tests/test_phase3_items.py::test_k_parameter_bounds_result_count PASSED  [ 49%]
+tests/test_phase3_items.py::test_upload_is_content_hashed_and_deduplicated PASSED [ 50%]
+tests/test_phase3_items.py::test_private_descriptor_is_encrypted_and_never_returned PASSED [ 52%]
+tests/test_phase3_items.py::test_rejects_non_image_and_oversized_uploads PASSED [ 54%]
+tests/test_phase3_items.py::test_student_sees_only_what_they_handed_in PASSED [ 56%]
+tests/test_phase3_items.py::test_student_cannot_read_another_students_found_item PASSED [ 58%]
+tests/test_phase3_items.py::test_student_cannot_read_another_students_matches PASSED [ 60%]
+tests/test_phase3_items.py::test_matches_for_found_item_is_staff_only PASSED [ 61%]
+tests/test_phase3_items.py::test_unknown_ids_are_404 PASSED              [ 63%]
+tests/test_phase3_items.py::test_security_post_id_must_reference_a_security_officer PASSED [ 65%]
+tests/test_phase3_items.py::test_lost_report_accepts_an_optional_image PASSED [ 67%]
+tests/test_phase3_items.py::test_db_and_faiss_stay_in_step PASSED        [ 69%]
+tests/test_phase4_claims.py::test_full_journey_match_claim_verify_release_credit 
+  entailment score 0.9725  (threshold 0.7)
+PASSED [ 70%]
+tests/test_phase4_claims.py::test_wrong_description_is_rejected PASSED   [ 72%]
+tests/test_phase4_claims.py::test_no_impostor_claim_is_ever_approved 
+  claim                       fwd    sym  verdict   expected
+  true owner, natural       0.973  0.079  APPROVE   ok
+  true owner, terse         0.973  0.003  APPROVE   ok
+  wrong colour              0.001  0.001  reject    ok
+  wrong item                0.001  0.001  reject    ok
+  vague guess               0.004  0.004  reject    ok
+  direct contradiction      0.000  0.000  reject    ok
+PASSED [ 74%]
+tests/test_phase4_claims.py::test_verbose_true_claims_are_false_negatives 
+  verbose true claim scores 0.167 -> rejected at threshold 0.7
+PASSED [ 76%]
+tests/test_phase4_claims.py::test_partial_guesses_currently_pass   partial guess scores 0.962 -> approved at threshold 0.7
+PASSED  [ 78%]
+tests/test_phase4_claims.py::test_empty_descriptor_scores_zero PASSED    [ 80%]
+tests/test_phase4_claims.py::test_attempts_are_capped PASSED             [ 81%]
+tests/test_phase4_claims.py::test_cannot_claim_against_someone_elses_lost_report PASSED [ 83%]
+tests/test_phase4_claims.py::test_claim_score_is_staff_only PASSED       [ 85%]
+tests/test_phase4_claims.py::test_release_is_staff_only_and_idempotent PASSED [ 87%]
+tests/test_phase4_claims.py::test_verify_endpoint_is_staff_only PASSED   [ 89%]
+tests/test_phase4_claims.py::test_unknown_ids_are_404 PASSED             [ 90%]
+tests/test_phase6_evaluation.py::test_perfect_ranking_scores_one PASSED  [ 92%]
+tests/test_phase6_evaluation.py::test_correct_item_second_gives_half_mrr PASSED [ 94%]
+tests/test_phase6_evaluation.py::test_ties_are_broken_pessimistically PASSED [ 96%]
+tests/test_phase6_evaluation.py::test_tfidf_baseline_ranks_matching_text_first PASSED [ 98%]
+tests/test_phase6_evaluation.py::test_clip_outperforms_tfidf_on_the_test_set 
+               R@1     R@3     R@5     MRR
+  clip       0.625   0.865   0.950   0.757
+  tfidf      0.315   0.455   0.605   0.439
+PASSED [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/fastapi/testclient.py:1
+  /Users/mac/Desktop/campus-lost-and-found/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854
+  /Users/mac/Desktop/campus-lost-and-found/.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+    from crypt import crypt as _crypt
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 55 passed, 2 warnings in 30.59s ========================

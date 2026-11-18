@@ -1,0 +1,34 @@
+200 query/item pairs, 21 categories
+
+model loaded in 5.0s; encoding...
+encoded 200 images + 600 texts in 10.3s
+
+method                           R@1      R@3      R@5      P@1      P@3      P@5      MRR      med
+---------------------------------------------------------------------------------------------------
+clip (text -> image)           0.625    0.865    0.950    0.625    0.288    0.190    0.757        1
+clip + "a photo of"            0.630    0.860    0.925    0.630    0.287    0.185    0.757        1
+clip (text -> image+desc)      0.630    0.815    0.885    0.630    0.272    0.177    0.736        1
+tfidf (text -> text)           0.315    0.455    0.605    0.315    0.152    0.121    0.439        4
+
+95% CI on R@1 (bootstrap over queries)
+  clip (text -> image)         0.625  [0.560, 0.695]
+  clip + "a photo of"          0.630  [0.565, 0.700]
+  clip (text -> image+desc)    0.630  [0.560, 0.690]
+  tfidf (text -> text)         0.315  [0.250, 0.380]
+
+vs. the TF-IDF baseline (paired bootstrap, one-sided)
+  clip (text -> image)         R@1  +0.310  p=0.0000  significant
+  clip (text -> image)         R@5  +0.345  p=0.0000  significant
+  clip + "a photo of"          R@1  +0.315  p=0.0000  significant
+  clip + "a photo of"          R@5  +0.320  p=0.0000  significant
+  clip (text -> image+desc)    R@1  +0.315  p=0.0000  significant
+  clip (text -> image+desc)    R@5  +0.280  p=0.0000  significant
+
+worst CLIP retrievals
+  rank  30  [kite]  There is a person in the picture by itself.
+  rank  16  [kite]  A little kid that is playing with stuff.
+  rank  13  [clock]  A display of clocks inside a shop window.
+  rank  12  [suitcase]  A piece of luggage is ready to go with cold wear on top for quick usag
+  rank  11  [clock]  The clock shown above has someone's name on it.
+
+wrote eval/results/coco.json

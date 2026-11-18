@@ -1,0 +1,90 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+56 items, 24 categories, 18 in look-alike pairs
+
+model loaded in 6.6s; encoding...
+encoded 56 images + 280 texts in 5.6s
+
+LOST REPORT -> FOUND ITEM  (text -> image; 56-way)
+method                               R@1      R@3      R@5      P@1      P@3      P@5      MRR      med
+-------------------------------------------------------------------------------------------------------
+clip  A -> photo                   0.929    0.982    1.000    0.929    0.327    0.200    0.960        1
+clip  "a photo of" A -> photo      0.929    0.982    1.000    0.929    0.327    0.200    0.960        1
+clip  A -> photo+B                 0.929    1.000    1.000    0.929    0.333    0.200    0.961        1
+clip  A -> B (text only)           0.893    0.964    1.000    0.893    0.321    0.200    0.935        1
+tfidf A -> B (baseline)            0.750    0.857    0.929    0.750    0.286    0.186    0.820        1
+hybrid clip photo + tfidf          0.821    0.982    1.000    0.821    0.327    0.200    0.900        1
+
+VAGUE QUERIES  (e.g. 'a black watch')
+method                                   R@1      R@3      R@5      P@1      P@3      P@5      MRR      med
+-----------------------------------------------------------------------------------------------------------
+clip  vague -> photo                   0.554    0.839    0.911    0.554    0.280    0.182    0.714        1
+clip  "a photo of" vague -> photo      0.571    0.821    0.911    0.571    0.274    0.182    0.720        1
+clip  vague -> photo+B                 0.571    0.839    0.946    0.571    0.280    0.189    0.719        1
+clip  vague -> B (text only)           0.500    0.768    0.839    0.500    0.256    0.168    0.650        2
+tfidf vague -> B (baseline)            0.500    0.768    0.804    0.500    0.256    0.161    0.637        2
+hybrid vague: clip photo + tfidf       0.536    0.857    0.911    0.536    0.286    0.182    0.712        1
+
+FOUND ITEM -> LOST REPORT  (image -> text; the found-item flow)
+method                         R@1      R@3      R@5      P@1      P@3      P@5      MRR      med
+-------------------------------------------------------------------------------------------------
+clip  photo -> A             0.946    1.000    1.000    0.946    0.333    0.200    0.973        1
+tfidf B -> A (baseline)      0.768    0.875    0.911    0.768    0.292    0.182    0.834        1
+
+95% CI (bootstrap over queries)
+  clip  A -> photo                   R@1 0.929  [0.857, 0.982]
+  clip  A -> photo                   R@5 1.000  [1.000, 1.000]
+  tfidf A -> B (baseline)            R@1 0.750  [0.643, 0.857]
+  tfidf A -> B (baseline)            R@5 0.929  [0.857, 0.982]
+  clip  A -> photo+B                 R@1 0.929  [0.857, 0.982]
+  clip  A -> photo+B                 R@5 1.000  [1.000, 1.000]
+  hybrid clip photo + tfidf          R@1 0.821  [0.714, 0.911]
+  hybrid clip photo + tfidf          R@5 1.000  [1.000, 1.000]
+  clip  vague -> photo               R@1 0.554  [0.429, 0.679]
+  clip  vague -> photo               R@5 0.911  [0.821, 0.982]
+  tfidf vague -> B (baseline)        R@1 0.500  [0.375, 0.625]
+  tfidf vague -> B (baseline)        R@5 0.804  [0.696, 0.893]
+
+Paired comparisons (one-sided bootstrap)
+  clip  A -> photo beats tfidf A -> B (baseline)  R@1 +0.179  p=0.0044  significant
+  clip  A -> photo beats tfidf A -> B (baseline)  R@3 +0.125  p=0.0064  significant
+  clip  A -> photo beats tfidf A -> B (baseline)  R@5 +0.071  p=0.0150  significant
+  clip  A -> photo+B beats clip  A -> photo  R@3 +0.018  p=0.3674  not significant
+  clip  A -> photo beats clip  A -> B (text only)  R@1 +0.036  p=0.3286  not significant
+  clip  A -> photo beats clip  A -> B (text only)  R@3 +0.018  p=0.4034  not significant
+  hybrid clip photo + tfidf beats tfidf A -> B (baseline)  R@1 +0.071  p=0.0642  not significant
+  hybrid clip photo + tfidf beats tfidf A -> B (baseline)  R@3 +0.125  p=0.0002  significant
+  hybrid clip photo + tfidf beats tfidf A -> B (baseline)  R@5 +0.071  p=0.0150  significant
+  clip  vague -> photo beats tfidf vague -> B (baseline)  R@1 +0.054  p=0.3162  not significant
+  clip  vague -> photo beats tfidf vague -> B (baseline)  R@3 +0.071  p=0.1958  not significant
+  clip  vague -> photo beats tfidf vague -> B (baseline)  R@5 +0.107  p=0.0482  significant
+  hybrid vague: clip photo + tfidf beats tfidf vague -> B (baseline)  R@1 +0.036  p=0.2710  not significant
+  hybrid vague: clip photo + tfidf beats tfidf vague -> B (baseline)  R@3 +0.089  p=0.0052  significant
+  hybrid vague: clip photo + tfidf beats tfidf vague -> B (baseline)  R@5 +0.107  p=0.0022  significant
+
+MATCH / NON-MATCH AT A SIMILARITY THRESHOLD
+  clip  A -> photo             ROC-AUC 0.997  mean sim true 0.348 vs false 0.110  | best F1 0.790 at t=0.313 (P 0.746, R 0.839, 0.286 false/query)
+  tfidf A -> B (baseline)      ROC-AUC 0.972  mean sim true 0.211 vs false 0.011  | best F1 0.690 at t=0.140 (P 0.684, R 0.696, 0.321 false/query)
+  clip  A -> photo+B           ROC-AUC 0.995  mean sim true 0.631 vs false 0.262  | best F1 0.756 at t=0.588 (P 0.714, R 0.804, 0.321 false/query)
+  hybrid clip photo + tfidf    ROC-AUC 0.998  mean sim true 8.602 vs false -0.156  | best F1 0.832 at t=6.244 (P 0.825, R 0.839, 0.179 false/query)
+
+BREAKDOWNS  (CLIP vs TF-IDF, R@1 / R@5)
+  by lighting
+    daylight               n=19  CLIP 0.89/1.00   TF-IDF 0.89/1.00
+    dim                    n=11  CLIP 0.82/1.00   TF-IDF 0.55/0.82
+    harsh                  n= 1  CLIP 1.00/1.00   TF-IDF 1.00/1.00
+    normal                 n=25  CLIP 1.00/1.00   TF-IDF 0.72/0.92
+  by hand_held
+    hand-held              n=11  CLIP 0.82/1.00   TF-IDF 0.91/1.00
+    placed                 n=45  CLIP 0.96/1.00   TF-IDF 0.71/0.91
+  by lookalike
+    in look-alike pair     n=18  CLIP 0.89/1.00   TF-IDF 0.61/0.89
+    no look-alike          n=38  CLIP 0.95/1.00   TF-IDF 0.82/0.95
+
+CLIP FAILURES (A -> photo, correct item not ranked 1st)
+  rank  4  powerbank_03.JPG     top-1 was earbuds_04.JPG       TF-IDF rank  1
+  rank  2  key_02.JPG           top-1 was key_03.JPG           TF-IDF rank  1  <- confused with its look-alike
+  rank  2  watch_03.JPG         top-1 was watch_04.JPG         TF-IDF rank 18  <- confused with its look-alike
+  rank  2  watch_07.JPG         top-1 was watch_02.JPG         TF-IDF rank  1
+
+wrote /Users/mac/Desktop/campus-lost-and-found/eval/results/campus/summary.json, per_item.csv, scores.npz

@@ -1,0 +1,37 @@
+# Environment for evaluation runs (2026-11-17 18:53 WAT)
+
+## Hardware / OS
+macOS:   macOS 27.0.1 (build 26A434); Darwin 27.0.0
+Chip:    Apple M1  (8 cores: 4 performance + 4 efficiency)
+RAM:     8 GB
+
+## Software
+Python:  3.11.9 (CPython, arm64)
+uv:      uv 0.9.8 (85c5d3228 2025-11-07)
+torch                  2.13.0
+torchvision            0.28.0
+open_clip_torch        3.3.0
+faiss-cpu              1.15.0
+sentence-transformers  6.0.0
+transformers           5.15.1
+scikit-learn           1.9.0
+numpy                  2.4.6
+fastapi                0.141.1
+pillow                 12.3.0
+
+## CLIP configuration
+Model:          ViT-B-32 / laion2b_s34b_b79k
+Device used:    cpu  (CLIP_DEVICE unset -> default cpu; MPS available: True, not used)
+torch threads:  4
+
+## Encoding time (from logs, CPU)
+Campus (eval/results/campus_log.txt):
+  model loaded in 6.6s; encoding...
+  encoded 56 images + 280 texts in 5.6s
+COCO   (eval/results/coco_log.txt):
+  model loaded in 5.0s; encoding...
+  encoded 200 images + 600 texts in 10.3s
+Model weights were already in the local Hugging Face cache, so load times exclude the download.
+
+## Test suite
+  55 passed, 2 warnings in 30.59s 

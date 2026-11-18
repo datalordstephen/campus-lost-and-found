@@ -253,3 +253,8 @@ frontend/dist/
 
 # --- macOS ------------------------------------------------------------------
 .DS_Store
+
+# --- campus evaluation (matric numbers + Drive links; repo is public) --------
+
+thesis_results.zip
+campus_eval_files.zip
