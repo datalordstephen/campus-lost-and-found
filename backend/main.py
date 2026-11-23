@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from backend import clip_encoder, faiss_store, verification
+from backend.frontend import mount_frontend
 from backend.database import init_db
 from backend.routers import admin as admin_router
 from backend.routers import auth as auth_router
@@ -84,3 +85,12 @@ def health() -> dict:
         "nli_loaded": verification.is_loaded(),
         "faiss": faiss_store.stats(),
     }
+
+
+# Single-container deploys serve the built React app from here (see Dockerfile).
+# In development FRONTEND_DIST is unset and Vite serves the frontend instead.
+if os.getenv("FRONTEND_DIST"):
+    if not mount_frontend(app, os.environ["FRONTEND_DIST"]):
+        logging.getLogger(__name__).warning(
+            "FRONTEND_DIST=%s has no index.html; serving the API only", os.environ["FRONTEND_DIST"]
+        )
