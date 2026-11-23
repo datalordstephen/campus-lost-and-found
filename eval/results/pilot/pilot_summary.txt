@@ -1,0 +1,29 @@
+Claims: 39 (13 genuine, 26 impostor) on 13 items; 14 distinct claimants.
+
+At tau = 0.7:
+  forward     FAR 0/26 = 0.000 [95% CI 0.00, 0.13]   FRR 13/13 = 1.000 [95% CI 0.77, 1.00]   catch rate 1.000
+  two_way     FAR 0/26 = 0.000 [95% CI 0.00, 0.13]   FRR 13/13 = 1.000 [95% CI 0.77, 1.00]   catch rate 1.000
+  sentence    FAR 0/26 = 0.000 [95% CI 0.00, 0.13]   FRR 13/13 = 1.000 [95% CI 0.77, 1.00]   catch rate 1.000
+  reverse_all FAR 0/26 = 0.000 [95% CI 0.00, 0.13]   FRR 11/13 = 0.846 [95% CI 0.58, 0.96]   catch rate 1.000
+  reverse_any FAR 2/26 = 0.077 [95% CI 0.02, 0.24]   FRR 8/13 = 0.615 [95% CI 0.36, 0.82]   catch rate 0.923
+
+Separation of genuine from impostor claims (ROC-AUC; 0.5 = no better than chance):
+  forward     AUC 0.493
+  two_way     AUC 0.556
+  sentence    AUC 0.584
+  reverse_all AUC 0.641
+  reverse_any AUC 0.722
+
+FAR at tau = 0.7 by impostor style:
+  forward     ai_long 0/13   ai_short 0/13
+  two_way     ai_long 0/13   ai_short 0/13
+  sentence    ai_long 0/13   ai_short 0/13
+  reverse_all ai_long 0/13   ai_short 0/13
+  reverse_any ai_long 2/13   ai_short 0/13
+
+Equal-error point (threshold where FAR and FRR are closest):
+  forward     tau 0.05: FAR 0.000, FRR 1.000
+  two_way     tau 0.05: FAR 0.000, FRR 1.000
+  sentence    tau 0.05: FAR 0.038, FRR 1.000
+  reverse_all tau 0.05: FAR 0.192, FRR 0.769
+  reverse_any tau 0.15: FAR 0.423, FRR 0.385

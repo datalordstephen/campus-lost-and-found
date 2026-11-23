@@ -3,8 +3,10 @@
 When two people claim the same black umbrella, CLIP cannot separate them — the
 photos are identical. What separates them is a detail only the owner knows, which
 they recorded when filing the report. This module asks a pretrained NLI model
-whether that stored detail (the *premise*) entails what the claimant says (the
-*hypothesis*).
+whether what the claimant says entails that stored detail. (The original rule
+ran the other way; the verification pilot showed it rejected every genuine
+owner, so the default is now the reverse direction. ``NLI_RULE=forward``
+restores the original.)
 
 No fine-tuning: `cross-encoder/nli-distilroberta-base` is trained on SNLI/MNLI and
 used off the shelf, in keeping with the project's zero-shot premise.
@@ -14,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import threading
 
 import numpy as np
@@ -117,17 +120,78 @@ def verify_claims(pairs: list[tuple[str, str]]) -> list[float]:
     return [float(p) for p in _softmax(raw)[:, _entailment_index]]
 
 
+# Sentence ends (a full stop, ! or ? followed by a space or the end) and line
+# or semicolon breaks. A dot inside "O.H" or "22.5W" does not split.
+_DETAIL_BREAK = re.compile(r"[.!?]+(?:\s+|$)|[;\n]+")
+
+
+def split_details(private_descriptor: str) -> list[str]:
+    """The descriptor as a whole plus each sentence-like part of it.
+
+    Owners often record two separate facts ("Initials on the back. A Nike
+    sticker inside."), and a genuine claim usually mentions one of them, so
+    each part is checked on its own as well as the descriptor as a whole.
+    """
+    whole = private_descriptor.strip()
+    parts = [p.strip(" ,") for p in _DETAIL_BREAK.split(whole)]
+    parts = [p for p in parts if len(p.split()) >= 2]
+    return list(dict.fromkeys([whole, *parts]))
+
+
+def verify_claim_forward(private_descriptor: str, claimant_description: str) -> float:
+    """Original rule: does the stored detail entail the claimant's account?
+
+    The stored descriptor is the premise and the claim the hypothesis. The
+    verification pilot (13 owners, 26 impostor claims) showed this rule rejects
+    genuine owners: real claims describe the whole item, and a short stored
+    detail cannot entail colour, brand and everything else the owner mentions.
+    It rejected all 13 owners and separated owners from impostors no better
+    than chance (AUC 0.49). Kept for comparison and selectable with
+    ``NLI_RULE=forward``.
+    """
+    if not (private_descriptor or "").strip() or not (claimant_description or "").strip():
+        return 0.0
+    return verify_claims([(private_descriptor, claimant_description)])[0]
+
+
+def verify_claim_reverse(private_descriptor: str, claimant_description: str) -> float:
+    """Pilot-informed rule: does the claim entail any recorded detail?
+
+    The claimant's account is the premise and each recorded detail a
+    hypothesis, so the question becomes "does what this person said establish
+    something only the owner recorded?". A full, natural description can still
+    entail a detail it contains, which the forward rule cannot allow. The score
+    is the best match over the details. In the pilot this rule separated owners
+    from impostors best (AUC 0.72), but it was chosen after the data were seen,
+    so it is a working default to be confirmed, and the security officer still
+    makes the release decision.
+    """
+    if not (private_descriptor or "").strip() or not (claimant_description or "").strip():
+        return 0.0
+    details = split_details(private_descriptor)
+    return max(verify_claims([(claimant_description, d) for d in details]))
+
+
+_RULES = {"forward": verify_claim_forward, "reverse": verify_claim_reverse}
+
+
+def verification_rule() -> str:
+    """The scoring rule in force, from ``NLI_RULE`` (default ``reverse``)."""
+    rule = os.getenv("NLI_RULE", "reverse").strip().lower()
+    if rule not in _RULES:
+        logger.warning("Unknown NLI_RULE %r; using 'reverse'", rule)
+        return "reverse"
+    return rule
+
+
 def verify_claim(private_descriptor: str, claimant_description: str) -> float:
-    """Score how strongly the stored private detail entails the claimant's account.
+    """Score a claim against the owner's stored private detail.
 
     Returns a probability in [0, 1]; compare against ``ENTAILMENT_THRESHOLD``.
-
-    Direction matters. The stored descriptor is the premise and the claimant's
-    text is the hypothesis, so the question is "given what the owner recorded,
-    does the claimant's statement follow?" Note the asymmetry this creates: a
-    vague claim is entailed by a specific premise more easily than the reverse,
-    so a claimant who says little is treated generously. `verify_claim_symmetric`
-    is the stricter alternative.
+    Uses the rule named by ``NLI_RULE``: ``reverse`` (default; the claim must
+    entail a recorded detail) or ``forward`` (the original rule; the detail
+    must entail the claim). See the two functions above for why the default
+    changed after the verification pilot.
     """
     if not private_descriptor or not private_descriptor.strip():
         # Nothing on file to check against — cannot vouch for this claimant.
@@ -136,7 +200,7 @@ def verify_claim(private_descriptor: str, claimant_description: str) -> float:
     if not claimant_description or not claimant_description.strip():
         return 0.0
 
-    return verify_claims([(private_descriptor, claimant_description)])[0]
+    return _RULES[verification_rule()](private_descriptor, claimant_description)
 
 
 def verify_claim_symmetric(private_descriptor: str, claimant_description: str) -> float:

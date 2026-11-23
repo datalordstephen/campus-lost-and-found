@@ -8,6 +8,9 @@ Three scoring rules are compared on the same claims:
   forward     P(entailment | premise = stored detail, hypothesis = whole claim).
               This is the rule the system uses today.
   two_way     min(forward, P(entailment | premise = claim, hypothesis = detail)).
+  reverse_all / reverse_any  (exploratory, added after the first run)
+              P(entailment | premise = whole claim, hypothesis = stored detail),
+              requiring all stored details (_all, the minimum) or at least one (_any, the maximum).
   sentence    The claim is split into sentences. For each stored detail, take the
               highest entailment over the claim's sentences; the claim's score is the
               lowest of those over the stored details (so with two details, both must
@@ -71,7 +74,26 @@ def score_claim(nli, details, claim, contradiction_cut):
         if any(r[1] > contradiction_cut for r in res):
             contradicted = True
     sent = 0.0 if contradicted else min(per_detail)
-    return {"forward": fwd, "two_way": min(fwd, back), "sentence": sent}
+    # Reverse direction (added after the first pilot run, so exploratory): the claim is the
+    # premise and each stored detail the hypothesis, i.e. "does what the claimant said prove
+    # the private detail?". A full description that also mentions visible features can still
+    # entail the detail, which the forward direction cannot allow.
+    rev = [nli([(claim, d)])[0][0] for d in details]
+    return {"forward": fwd, "two_way": min(fwd, back), "sentence": sent,
+            "reverse_all": min(rev), "reverse_any": max(rev)}
+
+
+def auc(rows, rule):
+    g = [r[rule] for r in rows if r["kind"] == "genuine"]
+    i = [r[rule] for r in rows if r["kind"] == "impostor"]
+    if not g or not i:
+        return float("nan")
+    return sum((a > b) + 0.5 * (a == b) for a in g for b in i) / (len(g) * len(i))
+
+
+def style(note):
+    note = (note or "").lower()
+    return "ai_short" if "short" in note else "ai_long" if "long" in note else "human"
 
 
 def wilson(k, n, z=1.96):
@@ -119,10 +141,10 @@ def main(argv=None, nli=None):
     for c in claims:
         s = score_claim(nli, items[c["item_id"].strip()], c["claim_text"].strip(), a.contradiction)
         rows.append({"claim_id": c.get("claim_id", ""), "item_id": c["item_id"].strip(), "claimant_code": c.get("claimant_code", ""),
-                     "kind": c["kind"], "n_details": len(items[c["item_id"].strip()]), **{k: round(v, 4) for k, v in s.items()},
+                     "kind": c["kind"], "style": style(c.get("notes")) if c["kind"] == "impostor" else "", "n_details": len(items[c["item_id"].strip()]), **{k: round(v, 4) for k, v in s.items()},
                      "claim_text": c["claim_text"].strip()})
 
-    rules = ["forward", "two_way", "sentence"]
+    rules = ["forward", "two_way", "sentence", "reverse_all", "reverse_any"]
     with open(os.path.join(a.out, "pilot_scores.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, list(rows[0].keys()))
         w.writeheader()
@@ -146,13 +168,26 @@ def main(argv=None, nli=None):
         fa, ni, fr, ng = rates(rows, rule, a.tau)
         lo1, hi1 = wilson(fa, ni)
         lo2, hi2 = wilson(fr, ng)
-        lines.append(f"  {rule:<9} FAR {fa}/{ni} = {fa / ni:.3f} [95% CI {lo1:.2f}, {hi1:.2f}]   "
+        lines.append(f"  {rule:<11} FAR {fa}/{ni} = {fa / ni:.3f} [95% CI {lo1:.2f}, {hi1:.2f}]   "
                      f"FRR {fr}/{ng} = {fr / ng:.3f} [95% CI {lo2:.2f}, {hi2:.2f}]   catch rate {1 - fa / ni:.3f}")
+    lines += ["", "Separation of genuine from impostor claims (ROC-AUC; 0.5 = no better than chance):"]
+    for rule in rules:
+        lines.append(f"  {rule:<11} AUC {auc(rows, rule):.3f}")
+    styles = sorted({r["style"] for r in rows if r["kind"] == "impostor"})
+    if len(styles) > 1:
+        lines += ["", f"FAR at tau = {a.tau} by impostor style:"]
+        for rule in rules:
+            parts = []
+            for st in styles:
+                sub = [r for r in rows if r["kind"] == "impostor" and r["style"] == st]
+                fa = sum(r[rule] >= a.tau for r in sub)
+                parts.append(f"{st} {fa}/{len(sub)}")
+            lines.append(f"  {rule:<11} " + "   ".join(parts))
     lines += ["", "Equal-error point (threshold where FAR and FRR are closest):"]
     for rule in rules:
         best = min(taus, key=lambda t: abs(rates(rows, rule, t)[0] / imp - rates(rows, rule, t)[2] / gen))
         fa, ni, fr, ng = rates(rows, rule, best)
-        lines.append(f"  {rule:<9} tau {best:.2f}: FAR {fa / ni:.3f}, FRR {fr / ng:.3f}")
+        lines.append(f"  {rule:<11} tau {best:.2f}: FAR {fa / ni:.3f}, FRR {fr / ng:.3f}")
     open(os.path.join(a.out, "pilot_summary.txt"), "w").write("\n".join(lines) + "\n")
     print("\n".join(lines))
     return rows

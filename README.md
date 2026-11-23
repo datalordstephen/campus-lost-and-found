@@ -179,8 +179,17 @@ uv run python eval/evaluate.py --json eval/results.json
 
 ## Verification notes
 
-- **Direction matters.** The stored private descriptor is the NLI *premise*, the claimant's text
-  is the *hypothesis*: "given what the owner recorded, does the claimant's statement follow?"
+- **The default rule changed after the verification pilot.** In a pilot with 13 owners and 26
+  impostor claims (`eval/pilot_score.py`), the original forward rule below rejected all 13 genuine
+  owners: real claims describe the whole item, and a short stored detail cannot entail all of it.
+  The app now uses the reverse rule (`NLI_RULE=reverse`, the default): the claim is the premise and
+  each recorded detail a hypothesis, and the best match counts. It separated owners from impostors
+  better in the pilot (AUC 0.72 against 0.49) but was chosen after seeing the data, so treat it as a
+  working default; the security officer still decides the release. `NLI_RULE=forward` restores the
+  original rule.
+- **Direction matters.** Under the original forward rule the stored private descriptor is the NLI
+  *premise* and the claimant's text the *hypothesis*: "given what the owner recorded, does the
+  claimant's statement follow?"
   This is asymmetric — a vague claim is entailed by a specific premise more easily than the
   reverse, so saying little is treated generously. `verify_claim_symmetric` takes the minimum of
   both directions and is the stricter rule; it is exposed but not wired in, so Phase 6 can

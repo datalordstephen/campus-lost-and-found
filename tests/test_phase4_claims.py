@@ -6,6 +6,7 @@ releases -> incentive credited.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -30,6 +31,24 @@ SECRET = "there is a deep scratch across the handle and a blue sticker under the
 # the truth of the claim.
 TRUE_CLAIM = "it's got a scratch on the handle and there's a blue sticker underneath"
 FALSE_CLAIM = "it is plain black with no marks, stickers or scratches anywhere"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def forward_rule():
+    """Pin the original scoring rule for this module.
+
+    SECRET / TRUE_CLAIM were calibrated for the forward rule, and these tests
+    check the claim journey and the documented behaviour of that rule. The
+    reverse rule (now the app default, after the verification pilot) is
+    covered in test_verification_rules.py.
+    """
+    previous = os.environ.get("NLI_RULE")
+    os.environ["NLI_RULE"] = "forward"
+    yield
+    if previous is None:
+        os.environ.pop("NLI_RULE", None)
+    else:
+        os.environ["NLI_RULE"] = previous
 
 
 @pytest.fixture(scope="module")
@@ -202,7 +221,7 @@ def test_no_impostor_claim_is_ever_approved(client, capsys):
         print(f"\n  {'claim':<24} {'fwd':>6} {'sym':>6}  verdict   expected")
         rows = []
         for label, text, should_pass in cases:
-            forward = verification.verify_claim(SECRET, text)
+            forward = verification.verify_claim_forward(SECRET, text)
             symmetric = verification.verify_claim_symmetric(SECRET, text)
             verdict = verification.passes(forward)
             rows.append((label, forward, verdict, should_pass))
@@ -232,7 +251,7 @@ def test_verbose_true_claims_are_false_negatives(capsys):
     deliberate decision rather than a silent drift.
     """
     verbose_but_true = "the handle is scratched and I stuck a blue sticker under the canopy"
-    score = verification.verify_claim(SECRET, verbose_but_true)
+    score = verification.verify_claim_forward(SECRET, verbose_but_true)
     with capsys.disabled():
         print(f"\n  verbose true claim scores {score:.3f} -> rejected at threshold 0.7")
     assert score < verification.ENTAILMENT_THRESHOLD
@@ -246,7 +265,7 @@ def test_partial_guesses_currently_pass(capsys):
     this needs a coverage-style rule over the recorded clauses; forward entailment
     alone cannot express "you must know *everything* we recorded".
     """
-    score = verification.verify_claim(SECRET, "the handle has a scratch")
+    score = verification.verify_claim_forward(SECRET, "the handle has a scratch")
     with capsys.disabled():
         print(f"  partial guess scores {score:.3f} -> approved at threshold 0.7")
     assert score >= verification.ENTAILMENT_THRESHOLD
